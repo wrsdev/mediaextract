@@ -1,0 +1,16 @@
+{
+  "name": "mediaextract",
+  "description": "Extracts parts of media files",
+  "version": "0.0.1",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/wrsdev/mediaextract.git"
+  },
+  "bin": "./bin/mediaextract",
+  "dependencies": {
+    "fluent-ffmpeg": "^2.1.2",
+    "moment": "^2.22.2",
+    "moment-duration-format": "^2.2.2",
+    "yargs": "^12.0.2"
+  }
+}
