@@ -1,7 +1,7 @@
 {
   "name": "mediaextract",
   "description": "Extracts parts of media files",
-  "version": "0.0.1",
+  "version": "0.0.2",
   "repository": {
     "type": "git",
     "url": "https://github.com/wrsdev/mediaextract.git"
