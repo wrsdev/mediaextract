@@ -62,41 +62,40 @@ function extractCommand(argv) {
     outFile += '--clip-' + startTime.format(DURATION_FORMAT_FILE) + '--' + (endTime ? endTime.format(DURATION_FORMAT_FILE) : 'end');
   }
 
-  if (argv.extractAudio) {
-    outFile += '.' + argv.audioFormat;
+  if (argv.extractAudio && !argv.format) {
+    argv.format = 'mp3';
+  }
+
+  if (argv.format) {
+    outFile += '.' + argv.format;
   } else {
     outFile += path.extname(inFile);
   }
 
-  // report what we are about to do
-  if (!argv.quiet) {
-    console.log(`In: ${inFile}`);
-    console.log(`Out: ${outFile}`);
-    console.log(`Start: ${startTime.format(DURATION_FORMAT_TEXT, DURATION_FORMAT_SETTINGS)}`);
-    console.log(`End: ${endTime ? endTime.format(DURATION_FORMAT_TEXT, DURATION_FORMAT_SETTINGS) : 'Eof'}`);
-    console.log(`Duration: ${duration ? duration.format(DURATION_FORMAT_TEXT, DURATION_FORMAT_SETTINGS) : 'Unknown'}`);
+  const cmd = ffmpeg(inFile);
 
-    if (argv.extractAudio) {
-      console.log('Extracting audio only');
+  cmd.on('start', (cmdLine) => {
+    // report what we are about to do
+    if (!argv.quiet) {
+      console.log(`In: ${inFile}`);
+      console.log(`Out: ${outFile}`);
+      console.log(`Start: ${startTime.format(DURATION_FORMAT_TEXT, DURATION_FORMAT_SETTINGS)}`);
+      console.log(`End: ${endTime ? endTime.format(DURATION_FORMAT_TEXT, DURATION_FORMAT_SETTINGS) : 'Eof'}`);
+      console.log(`Duration: ${duration ? duration.format(DURATION_FORMAT_TEXT, DURATION_FORMAT_SETTINGS) : 'Unknown'}`);
+
+      if (argv.extractAudio) {
+        console.log('Extracting audio only');
+      }
+
+      if (argv.verbose) {
+        console.log(`Executing: ${cmdLine}`)
+      }
     }
-  }
-
-  let cmd;
-
-  try {
-    cmd = ffmpeg(inFile);
-  } catch (e) {
-    console.log('f');
-  }
-
-
-  cmd.on('error', (err, stdErr, stdOut) => {
-    console.log(err);
   });
 
-  if (argv.verbose) {
-    cmd.on('start', (cmdLine) => console.log(`Executing: ${cmdLine}`));
-  }
+  cmd.on('error', (err) => {
+    console.error(err.message);
+  });
 
   if (startTime) {
     cmd.seekInput(startTime.asSeconds());
@@ -107,20 +106,22 @@ function extractCommand(argv) {
   }
 
   if (argv.extractAudio) {
-    cmd.noVideo()
+    cmd
+      .noVideo()
       .outputOptions([
         '-q:a 2'
       ]);
-  } else if (!argv.convert) {
-    cmd.videoCodec('copy');
+  } else if (argv.copy) {
+    cmd
+      .videoCodec('copy');
+  } else {
+    cmd.outputOptions([
+      '-preset ultrafast',
+      '-crf 18'
+    ])
   }
 
-  try {
-    cmd.save(outFile);
-  } catch (e) {
-    console.log('f');
-  }
-
+  cmd.save(outFile);
 }
 
 yargs
@@ -138,8 +139,9 @@ yargs
         coerce: time2duration
       });
   }, extractCommand)
-  .option('convert', {
-    describe: 'Re-encode streams instead of copying',
+  .option('copy', {
+    describe: 'Copy streams instead of re-encoding. Faster and better quality, but less accurate seeking',
+    type: 'boolean',
     alias: 'c'
   })
   .option('duration', {
@@ -150,17 +152,16 @@ yargs
   .option('extract-audio', {
     describe: 'Extract audio stream only',
     type: 'boolean',
-    alias: 'x',
+    alias: 'x'
   })
-  .option('audio-format', {
-    describe: 'Select audio format',
-    default: 'mp3',
-    hidden: true
+  .option('format', {
+    describe: 'Output file format',
+    type: 'string'
   })
   .option('quiet', {
     describe: 'No console output except for errors',
     type: 'boolean',
-    alias: 'q',
+    alias: 'q'
   })
   .option('verbose', {
     describe: 'Show more information',
