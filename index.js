@@ -34,6 +34,10 @@ function time2duration(str) {
 
 function extractCommand(argv) {
 
+  if (argv.ffmpegPath) {
+    ffmpeg.setFfmpegPath(argv.ffmpegPath);
+  }
+
   if (!argv.startTime && !argv.duration && !argv.extractAudio) {
     if (!argv.quiet) {
       console.log('No start time given and not asked to extract audio so... SUCCESS!');
@@ -125,7 +129,7 @@ function extractCommand(argv) {
 }
 
 yargs
-  .command('$0 <in-file> [start-time] [end-time]', 'Extract part of a media file', (yargs) => {
+  .usage('$0 <in-file> [start-time] [end-time]', 'Extract part of a media file', (yargs) => {
     yargs
       .positional('in-file', {
         describe: 'Path to input file'
@@ -156,7 +160,13 @@ yargs
   })
   .option('format', {
     describe: 'Output file format',
-    type: 'string'
+    type: 'string',
+    alias: 'f'
+  })
+  .option('ffmpeg-path', {
+    describe: 'Path to ffmpeg binary if not found in environment',
+    type: 'string',
+    normalize: true
   })
   .option('quiet', {
     describe: 'No console output except for errors',
@@ -167,5 +177,5 @@ yargs
     describe: 'Show more information',
     type: 'boolean'
   })
-  .help()
+  .help('help')
   .parse();
